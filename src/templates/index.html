@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        .form-group { margin-bottom: 15px; }
+        input[type="file"], input[type="text"], button { width: 100%; padding: 10px; margin: 5px 0; }
+        #response { margin-top: 20px; padding: 10px; border: 1px solid #ccc; min-height: 50px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF Chatbot</h1>
+        <div class="form-group">
+            <form id="upload-form" enctype="multipart/form-data">
+                <input type="file" id="file" accept=".pdf">
+                <button type="submit">Upload PDF</button>
+            </form>
+        </div>
+        <div class="form-group">
+            <form id="query-form">
+                <input type="text" id="query" placeholder="Ask a question about the PDF">
+                <button type="submit">Ask</button>
+            </form>
+        </div>
+        <div id="response">No response yet.</div>
+    </div>
+
+    <script>
+        document.getElementById("upload-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById("file");
+            if (!fileInput.files[0]) {
+                document.getElementById("response").innerText = "Please select a PDF file.";
+                return;
+            }
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            
+            try {
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                if (!response.ok) {
+                    throw new Error(`Upload failed: ${response.status}`);
+                }
+                const result = await response.json();
+                console.log("Upload response:", result);
+                document.getElementById("response").innerText = result.message || "Upload successful.";
+            } catch (error) {
+                console.error("Upload error:", error);
+                document.getElementById("response").innerText = `Error uploading PDF: ${error.message}`;
+            }
+        });
+
+        document.getElementById("query-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const query = document.getElementById("query").value.trim();
+            if (!query) {
+                document.getElementById("response").innerText = "Please enter a question.";
+                return;
+            }
+            try {
+                const response = await fetch("/query", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ query })
+                });
+                if (!response.ok) {
+                    throw new Error(`Query failed: ${response.status}`);
+                }
+                const result = await response.json();
+                console.log("Query response:", result);
+                document.getElementById("response").innerText = result.answer || "No answer returned.";
+            } catch (error) {
+                console.error("Query error:", error);
+                document.getElementById("response").innerText = `Error processing query: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
